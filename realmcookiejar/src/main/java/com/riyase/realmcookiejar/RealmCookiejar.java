@@ -101,6 +101,7 @@ public class RealmCookiejar implements CookieJar {
     }
 
     public void clear() {
+        cookieCache.clear();
         Realm realm = Realm.getInstance( configuration);
         realm.beginTransaction();
         realm.where(JarEntry.class).findAll().clear();

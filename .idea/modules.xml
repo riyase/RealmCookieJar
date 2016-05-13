@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/RealmCookiejar.iml" filepath="$PROJECT_DIR$/RealmCookiejar.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/realmcookiejar/realmcookiejar.iml" filepath="$PROJECT_DIR$/realmcookiejar/realmcookiejar.iml" />
       <module fileurl="file://$PROJECT_DIR$/realmcookiejar/realmcookijar.iml" filepath="$PROJECT_DIR$/realmcookiejar/realmcookijar.iml" />
     </modules>
   </component>
