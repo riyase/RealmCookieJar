@@ -19,7 +19,7 @@ import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
 
 /**
- * Created by voris on 29/4/16.
+ * Created by riyase on 29/4/16.
  */
 public class RealmCookiejar implements CookieJar {
 
@@ -28,7 +28,7 @@ public class RealmCookiejar implements CookieJar {
     private RealmConfiguration configuration;
     private boolean hostAsKey = false;
 
-    public RealmCookiejar(RealmConfiguration configuration ) {
+    public RealmCookiejar(RealmConfiguration configuration) {
         this.configuration = configuration;
         Realm realm = Realm.getInstance( configuration );
         RealmResults<JarEntry> jarEntries = realm.where(JarEntry.class)
@@ -51,8 +51,9 @@ public class RealmCookiejar implements CookieJar {
 
     @Override
     public synchronized void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+
         String keyUrl;
-        if ( isHostAsKey() ) {
+        if (isHostAsKey()) {
             Log.d(TAG,"save url:"+url.host());
             keyUrl = url.host();
             HttpUrl httpUrl = HttpUrl.parse(keyUrl);
@@ -64,20 +65,32 @@ public class RealmCookiejar implements CookieJar {
         }
         Log.d(TAG,"save cookies:"+cookies.toString());
 
-        Realm realm = Realm.getInstance( configuration);
-        JarEntry jarEntry = realm.where(JarEntry.class).equalTo("url", keyUrl).findFirst();
-        realm.beginTransaction();
-        if ( jarEntry == null ) {
-            RealmList<RealmCookie> realmCookies = RealmCookie.createCookies(cookies);
-            jarEntry = new JarEntry();
-            jarEntry.setUrl( keyUrl );
-            jarEntry.setCookies( realmCookies );
-            realm.copyToRealmOrUpdate(jarEntry);
-        } else {
-            JarEntry.update( realm, jarEntry, cookies );
-        }
-        realm.commitTransaction();
-        realm.close();
+        Realm realm = Realm.getInstance(configuration);
+        realm.executeTransactionAsync(new Realm.Transaction() {
+
+            String url;
+            List<Cookie> cookies;
+
+            public Realm.Transaction init(String url, List<Cookie> cookies) {
+                this.url = url;
+                this.cookies = cookies;
+                return this;
+            }
+
+            @Override
+            public void execute(Realm realm) {
+                JarEntry entry = realm.where(JarEntry.class).equalTo("url", url).findFirst();
+                if (entry == null) {
+                    RealmList<RealmCookie> realmCookies = RealmCookie.createCookies(cookies);
+                    entry = new JarEntry();
+                    entry.setUrl(url);
+                    entry.setCookies(realmCookies);
+                    realm.copyToRealmOrUpdate(entry);
+                } else {
+                    JarEntry.update(entry, cookies);
+                }
+            }
+        }.init(keyUrl, cookies));
     }
 
     @Override
@@ -102,11 +115,23 @@ public class RealmCookiejar implements CookieJar {
 
     public void clear() {
         cookieCache.clear();
-        Realm realm = Realm.getInstance( configuration);
-        realm.beginTransaction();
-        realm.where(JarEntry.class).findAll().clear();
-        realm.where(RealmCookie.class).findAll().clear();
-        realm.commitTransaction();
-        realm.close();
+        Realm realm = Realm.getInstance(configuration);
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                realm.where(JarEntry.class).findAll().deleteAllFromRealm();
+                realm.where(RealmCookie.class).findAll().deleteAllFromRealm();
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+
+            }
+        });
     }
 }

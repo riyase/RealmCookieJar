@@ -7,7 +7,7 @@ import io.realm.RealmObject;
 import okhttp3.Cookie;
 
 /**
- * Created by voris on 29/4/16.
+ * Created by riyase on 29/4/16.
  */
 public class RealmCookie extends RealmObject{
     private String name;
@@ -96,7 +96,6 @@ public class RealmCookie extends RealmObject{
         RealmCookie realmCookie = new RealmCookie();
         realmCookie.setName( cookie.name());
         realmCookie.setValue( cookie.value());
-        //Log.d(YaraCookiejar.TAG,"put  "+realmCookie.getName()+":"+realmCookie.getValue());
         realmCookie.setExpiresAt( cookie.expiresAt());
         realmCookie.setDomain( cookie.domain());
         realmCookie.setPath( cookie.path());
@@ -147,16 +146,17 @@ public class RealmCookie extends RealmObject{
         }
     }
 
-    public static boolean equalsName( RealmCookie realmCookie, Cookie cookie ) {
-        return realmCookie.getName().equals( cookie.name() );
+    public static boolean equalsName(RealmCookie realmCookie, Cookie cookie) {
+        return realmCookie.getName().equals(cookie.name());
     }
-    public static boolean equals( RealmCookie realmCookie, Cookie cookie ) {
-        return realmCookie.getName().equals( cookie.name() )
-                && realmCookie.getName().equals( cookie.name() )
-                && realmCookie.getValue().equals( cookie.value() )
+
+    public static boolean equals(RealmCookie realmCookie, Cookie cookie) {
+        return realmCookie.getName().equals(cookie.name())
+                && realmCookie.getName().equals(cookie.name())
+                && realmCookie.getValue().equals(cookie.value())
                 && realmCookie.getExpiresAt() == cookie.expiresAt()
-                && realmCookie.getDomain().equals( cookie.name() )
-                && realmCookie.getPath().equals( cookie.name() )
+                && realmCookie.getDomain().equals(cookie.name())
+                && realmCookie.getPath().equals(cookie.name())
                 && realmCookie.isSecure() == cookie.secure()
                 && realmCookie.isHttpOnly() == cookie.httpOnly()
                 && realmCookie.isHostOnly() == cookie.hostOnly()

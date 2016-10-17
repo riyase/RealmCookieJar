@@ -10,7 +10,7 @@ import io.realm.annotations.PrimaryKey;
 import okhttp3.Cookie;
 
 /**
- * Created by voris on 29/4/16.
+ * Created by riyase on 29/4/16.
  */
 public class JarEntry extends RealmObject {
 
@@ -34,26 +34,28 @@ public class JarEntry extends RealmObject {
         this.cookies = cookies;
     }
 
-    public static void update(Realm realm, JarEntry entry, List<Cookie> cookies ) {
-        for ( Cookie cookie : cookies ) {
-            for (RealmCookie realmCookie : entry.getCookies()) {
-                if ( RealmCookie.equalsName( realmCookie, cookie ) ) {
-                    //Log.d(YaraCookiejar.TAG,"update  "+cookie.name()+":"+cookie.value());
-                    RealmCookie.update(realmCookie, cookie);
-                } else {
-                    RealmCookie savedCookie = realm.copyToRealm( RealmCookie.createRealmCookie( cookie ));
-                    //Log.d(YaraCookiejar.TAG,"put  "+savedCookie.getName()+":"+savedCookie.getValue());
-                    entry.getCookies().add( savedCookie );
+    public static void update(JarEntry entry, List<Cookie> cookies ) {
+        for (int i=0; i<cookies.size(); i++) {
+            int pos = -1;
+            for (int j=0; j<entry.getCookies().size(); j++) {
+                if (RealmCookie.equalsName(entry.getCookies().get(j), cookies.get(i))) {
+                    pos = j;
+                    break;
                 }
+            }
+            if (pos == -1) {
+                entry.getCookies().add(RealmCookie.createRealmCookie(cookies.get(i)));
+            } else {
+                RealmCookie.update(entry.getCookies().get(pos), cookies.get(i));
             }
         }
     }
 
-    public static List<Cookie> getOkCookies( JarEntry jarEntry ) {
-        if ( jarEntry.getCookies().size() == 0 ) {
+    public static List<Cookie> getOkCookies(JarEntry jarEntry) {
+        if (jarEntry.getCookies().size() == 0) {
             return new ArrayList<>();
         } else {
-            return getOkCookies( jarEntry.getCookies() );
+            return getOkCookies(jarEntry.getCookies());
         }
     }
 
@@ -61,7 +63,6 @@ public class JarEntry extends RealmObject {
         List<Cookie> cookies = new ArrayList<>();
         for ( RealmCookie realmCookie : realmCookies ) {
             cookies.add( RealmCookie.createOkCookie( realmCookie ));
-            //Log.d(YaraCookiejar.TAG,"get  "+realmCookie.getName()+":"+realmCookie.getValue());
         }
         return cookies;
     }
