@@ -1,5 +1,7 @@
 package com.riyase.realmcookiejar.db;
 
+import android.text.TextUtils;
+
 import java.util.List;
 
 import io.realm.RealmList;
@@ -94,47 +96,47 @@ public class RealmCookie extends RealmObject{
 
     public static RealmCookie createRealmCookie(Cookie cookie) {
         RealmCookie realmCookie = new RealmCookie();
-        realmCookie.setName( cookie.name());
-        realmCookie.setValue( cookie.value());
-        realmCookie.setExpiresAt( cookie.expiresAt());
-        realmCookie.setDomain( cookie.domain());
-        realmCookie.setPath( cookie.path());
-        realmCookie.setSecure( cookie.secure());
-        realmCookie.setHttpOnly( cookie.httpOnly());
-        realmCookie.setHostOnly( cookie.hostOnly());
-        realmCookie.setPersistent( cookie.persistent());
+        realmCookie.setName(cookie.name());
+        realmCookie.setValue(cookie.value());
+        realmCookie.setExpiresAt(cookie.expiresAt());
+        realmCookie.setDomain(cookie.domain());
+        realmCookie.setPath(cookie.path());
+        realmCookie.setSecure(cookie.secure());
+        realmCookie.setHttpOnly(cookie.httpOnly());
+        realmCookie.setHostOnly(cookie.hostOnly());
+        realmCookie.setPersistent(cookie.persistent());
         return realmCookie;
     }
 
-    public static Cookie createOkCookie( RealmCookie  realmCookie ) {
+    public static Cookie createOkCookie(RealmCookie  realmCookie) {
         Cookie.Builder builder = new Cookie.Builder();
-        builder.name( realmCookie.getName())
-                .value( realmCookie.getValue())
-                .expiresAt( realmCookie.getExpiresAt())
-                .domain( realmCookie.getDomain())
-                .path( realmCookie.getPath());
-        if ( realmCookie.isSecure() ) {
+        builder.name(realmCookie.getName())
+                .value(realmCookie.getValue())
+                .expiresAt(realmCookie.getExpiresAt())
+                .domain(realmCookie.getDomain())
+                .path(realmCookie.getPath());
+        if (realmCookie.isSecure()) {
             builder.secure();
         }
-        if ( realmCookie.isHttpOnly() ) {
+        if (realmCookie.isHttpOnly()) {
             builder.httpOnly();
         }
-        if ( realmCookie.isHostOnly() ) {
-            builder.hostOnlyDomain( realmCookie.getDomain() );
+        if (realmCookie.isHostOnly()) {
+            builder.hostOnlyDomain(realmCookie.getDomain());
         }
         return builder.build();
     }
 
     public static RealmList<RealmCookie> createCookies(List<Cookie> cookies) {
         RealmList<RealmCookie> realmCookies = new RealmList<>();
-        for ( Cookie cookie : cookies ) {
-            realmCookies.add(createRealmCookie( cookie));
+        for (Cookie cookie : cookies) {
+            realmCookies.add(createRealmCookie(cookie));
         }
         return realmCookies;
     }
 
-    public static void update( RealmCookie realmCookie, Cookie cookie ) {
-        if ( cookie.value() != null && !cookie.value().equals("")) {
+    public static void update(RealmCookie realmCookie, Cookie cookie) {
+        if (!TextUtils.isEmpty(cookie.value())) {
             realmCookie.setValue(cookie.value());
             realmCookie.setExpiresAt(cookie.expiresAt());
             realmCookie.setDomain(cookie.domain());

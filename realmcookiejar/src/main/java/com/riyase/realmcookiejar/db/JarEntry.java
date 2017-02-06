@@ -52,17 +52,17 @@ public class JarEntry extends RealmObject {
     }
 
     public static List<Cookie> getOkCookies(JarEntry jarEntry) {
-        if (jarEntry.getCookies().size() == 0) {
+        if (jarEntry.getCookies().isEmpty()) {
             return new ArrayList<>();
         } else {
             return getOkCookies(jarEntry.getCookies());
         }
     }
 
-    private static List<Cookie> getOkCookies( RealmList<RealmCookie> realmCookies ) {
+    private static List<Cookie> getOkCookies(RealmList<RealmCookie> realmCookies) {
         List<Cookie> cookies = new ArrayList<>();
-        for ( RealmCookie realmCookie : realmCookies ) {
-            cookies.add( RealmCookie.createOkCookie( realmCookie ));
+        for (RealmCookie realmCookie : realmCookies) {
+            cookies.add(RealmCookie.createOkCookie(realmCookie));
         }
         return cookies;
     }

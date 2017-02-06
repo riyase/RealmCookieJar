@@ -51,62 +51,74 @@ public class RealmCookiejar implements CookieJar {
 
     @Override
     public synchronized void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
-
         String keyUrl;
         if (isHostAsKey()) {
-            Log.d(TAG,"save url:"+url.host());
-            keyUrl = url.host();
-            HttpUrl httpUrl = HttpUrl.parse(keyUrl);
-            cookieCache.put(httpUrl, cookies);
+            HttpUrl hostUrl = new HttpUrl.Builder()
+                    .host(url.host())
+                    .scheme(url.scheme())
+                    .build();
+            keyUrl = hostUrl.toString();
+            cookieCache.put(hostUrl, cookies);
         } else {
-            Log.d(TAG,"save url:"+url.toString());
             keyUrl = url.toString();
             cookieCache.put(url, cookies);
         }
-        Log.d(TAG,"save cookies:"+cookies.toString());
-
-        Realm realm = Realm.getInstance(configuration);
-        realm.executeTransactionAsync(new Realm.Transaction() {
+        Thread thread = new Thread() {
 
             String url;
             List<Cookie> cookies;
-
-            public Realm.Transaction init(String url, List<Cookie> cookies) {
+            public Thread init(String url, List<Cookie> cookies) {
                 this.url = url;
                 this.cookies = cookies;
                 return this;
             }
 
-            @Override
-            public void execute(Realm realm) {
-                JarEntry entry = realm.where(JarEntry.class).equalTo("url", url).findFirst();
-                if (entry == null) {
-                    RealmList<RealmCookie> realmCookies = RealmCookie.createCookies(cookies);
-                    entry = new JarEntry();
-                    entry.setUrl(url);
-                    entry.setCookies(realmCookies);
-                    realm.copyToRealmOrUpdate(entry);
-                } else {
-                    JarEntry.update(entry, cookies);
+            public void run() {
+                Realm realm = null;
+                try {
+                    realm = Realm.getInstance(configuration);
+                    realm.beginTransaction();
+                    JarEntry entry = realm.where(JarEntry.class).equalTo("url", url).findFirst();
+                    if (entry == null) {
+                        RealmList<RealmCookie> realmCookies = RealmCookie.createCookies(cookies);
+                        entry = new JarEntry();
+                        entry.setUrl(url);
+                        entry.setCookies(realmCookies);
+                        realm.copyToRealmOrUpdate(entry);
+                    } else {
+                        JarEntry.update(entry, cookies);
+                    }
+                    realm.commitTransaction();
+                    realm.close();
+                } catch (Exception e) {
+                    if (realm != null) {
+                        if (realm.isInTransaction()) {
+                            realm.cancelTransaction();
+                        }
+                        if (!realm.isClosed()) {
+                            realm.close();
+                        }
+                    }
+                    throw e;
                 }
             }
-        }.init(keyUrl, cookies));
+        }.init(keyUrl, cookies);
+        thread.start();
     }
 
     @Override
     public List<Cookie> loadForRequest(HttpUrl url) {
-
         List<Cookie> cookies;
-        if ( isHostAsKey() ) {
-            Log.d(TAG, "load url:" + url.host());
-            cookies = cookieCache.get(HttpUrl.parse(url.host()));
+        if (isHostAsKey()) {
+            HttpUrl hostUrl = new HttpUrl.Builder()
+                    .host(url.host())
+                    .scheme(url.scheme())
+                    .build();
+            cookies = cookieCache.get(hostUrl);
         } else {
-            Log.d(TAG, "load url:" + url.toString());
             cookies = cookieCache.get(url);
         }
-
-        if ( cookies != null ) {
-            Log.d(TAG, "load cookies:" + cookies.toString());
+        if (cookies != null) {
             return cookies;
         } else {
             return new ArrayList<>();
@@ -115,23 +127,28 @@ public class RealmCookiejar implements CookieJar {
 
     public void clear() {
         cookieCache.clear();
-        Realm realm = Realm.getInstance(configuration);
-        realm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                realm.where(JarEntry.class).findAll().deleteAllFromRealm();
-                realm.where(RealmCookie.class).findAll().deleteAllFromRealm();
+        Thread thread = new Thread() {
+            public void run() {
+                Realm realm = null;
+                try {
+                    realm = Realm.getInstance(configuration);
+                    realm.beginTransaction();
+                    realm.deleteAll();
+                    realm.commitTransaction();
+                    realm.close();
+                } catch (Exception e) {
+                    if (realm != null) {
+                        if (realm.isInTransaction()) {
+                            realm.cancelTransaction();
+                        }
+                        if (!realm.isClosed()) {
+                            realm.close();
+                        }
+                    }
+                    throw e;
+                }
             }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-
-            }
-        }, new Realm.Transaction.OnError() {
-            @Override
-            public void onError(Throwable error) {
-
-            }
-        });
+        };
+        thread.start();
     }
 }
