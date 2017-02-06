@@ -10,9 +10,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import io.realm.DynamicRealm;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmList;
+import io.realm.RealmMigration;
 import io.realm.RealmResults;
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
@@ -24,16 +26,22 @@ import okhttp3.HttpUrl;
 public class RealmCookiejar implements CookieJar {
 
     public static final String TAG = "RealmCookieJar";
+    //public static final String REALM_FILE_COOKIEJAR = "cookiejar.realm";
     private final HashMap<HttpUrl, List<Cookie>> cookieCache = new HashMap<>();
     private RealmConfiguration configuration;
     private boolean hostAsKey = false;
 
-    public RealmCookiejar(RealmConfiguration configuration) {
-        this.configuration = configuration;
-        Realm realm = Realm.getInstance( configuration );
+    public RealmCookiejar() {
+        configuration = new RealmConfiguration.Builder()
+                //.name(REALM_FILE_COOKIEJAR)
+                .modules(new Module())
+                //.encryptionKey()
+                .schemaVersion(0)
+                .build();
+        Realm realm = Realm.getInstance(configuration);
         RealmResults<JarEntry> jarEntries = realm.where(JarEntry.class)
                 .findAll();
-        for ( JarEntry entry : jarEntries ) {
+        for (JarEntry entry : jarEntries) {
             List<Cookie> cookies = JarEntry.getOkCookies(entry);
             HttpUrl keyUrl = HttpUrl.parse(entry.getUrl());
             cookieCache.put(keyUrl,cookies);
@@ -41,7 +49,7 @@ public class RealmCookiejar implements CookieJar {
         realm.close();
     }
 
-    public void hostAsKey( boolean hostAsKey ) {
+    public void hostAsKey(boolean hostAsKey) {
         this.hostAsKey = hostAsKey;
     }
 
@@ -74,9 +82,8 @@ public class RealmCookiejar implements CookieJar {
             }
 
             public void run() {
-                Realm realm = null;
+                Realm realm = Realm.getInstance(configuration);
                 try {
-                    realm = Realm.getInstance(configuration);
                     realm.beginTransaction();
                     JarEntry entry = realm.where(JarEntry.class).equalTo("url", url).findFirst();
                     if (entry == null) {
@@ -89,17 +96,12 @@ public class RealmCookiejar implements CookieJar {
                         JarEntry.update(entry, cookies);
                     }
                     realm.commitTransaction();
-                    realm.close();
                 } catch (Exception e) {
-                    if (realm != null) {
-                        if (realm.isInTransaction()) {
-                            realm.cancelTransaction();
-                        }
-                        if (!realm.isClosed()) {
-                            realm.close();
-                        }
+                    if (realm.isInTransaction()) {
+                        realm.cancelTransaction();
                     }
-                    throw e;
+                } finally {
+                    realm.close();
                 }
             }
         }.init(keyUrl, cookies);
@@ -129,23 +131,17 @@ public class RealmCookiejar implements CookieJar {
         cookieCache.clear();
         Thread thread = new Thread() {
             public void run() {
-                Realm realm = null;
+                Realm realm = Realm.getInstance(configuration);
                 try {
-                    realm = Realm.getInstance(configuration);
                     realm.beginTransaction();
                     realm.deleteAll();
                     realm.commitTransaction();
-                    realm.close();
                 } catch (Exception e) {
-                    if (realm != null) {
-                        if (realm.isInTransaction()) {
-                            realm.cancelTransaction();
-                        }
-                        if (!realm.isClosed()) {
-                            realm.close();
-                        }
+                    if (realm.isInTransaction()) {
+                        realm.cancelTransaction();
                     }
-                    throw e;
+                } finally {
+                    realm.close();
                 }
             }
         };
